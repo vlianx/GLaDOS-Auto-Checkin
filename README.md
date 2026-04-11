@@ -10,7 +10,7 @@
 - ✅ **每天自动签到**
 - 🔁 **已签到自动识别，不会报错**
 - 👥 **支持多个账号**
-- 📬 **可选签到结果推送（PushDeer）**
+- 📬 **可选签到结果推送（Telegram Bot）**
 - 🆓 **完全免费，使用 GitHub Actions**
 
 ------
@@ -78,12 +78,18 @@ koa:sess=xxxxxx; koa:sess.sig=yyyyyy
 
 如果你想每天收到签到通知（可选）：
 
-1. 注册 PushDeer：https://www.pushdeer.com
-2. 获取你的 `SENDKEY`
-3. 在 GitHub Secrets 中再添加一个：
+1. 在 Telegram 搜索 `@BotFather`
+2. 发送 `/newbot` 创建机器人，拿到 `TG_BOT_TOKEN`
+3. 打开你新建的机器人，先发一条任意消息
+4. 访问：`https://api.telegram.org/bot<你的TG_BOT_TOKEN>/getUpdates`
+5. 在返回内容中找到你的 `chat.id`（这就是 `TG_CHAT_ID`）
+6. 在 GitHub Secrets 中添加下面两个：
 
-- **Name**：`SENDKEY`
-- **Value**：你的 PushDeer key
+- **Name**：`TG_BOT_TOKEN`
+- **Value**：你的 Telegram Bot Token
+
+- **Name**：`TG_CHAT_ID`
+- **Value**：你的聊天 ID（数字，可能是负数）
 
 不填也没关系，只是不会推送。
 
