@@ -1,0 +1,27 @@
+name: Keep Repository Active
+
+on:
+  schedule:
+    # 每 30 天运行一次（UTC 时间，示例：每月 1 号 0 点）
+    - cron: '0 0 1 */1 *'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  keep-active:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update dummy file
+        run: |
+          echo "Last active update: $(date -Is)" > .active-timestamp
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .active-timestamp
+          git commit -m "ci: keep repo active $(date +%Y-%m-%d)"
+          git push
