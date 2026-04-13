@@ -4,6 +4,7 @@ import time
 import random
 import requests
 from pypushdeer import PushDeer
+from urllib.parse import quote
 
 
 CHECKIN_URL = "https://glados.cloud/api/user/checkin"
@@ -24,9 +25,52 @@ PAYLOAD = {"token": "glados.cloud"}
 TIMEOUT = 10
 
 
-def push(sckey: str, title: str, text: str):
+def push_deer(sckey: str, title: str, text: str):
+    """推送消息到 PushDeer"""
     if sckey:
         PushDeer(pushkey=sckey).send_text(title, desp=text)
+
+
+def push_serverchan(sendkey: str, title: str, content: str):
+    """推送消息到 Server 酱 (Turbo 版)"""
+    if not sendkey:
+        return
+    
+    # Server 酱 Turbo 版 API
+    url = f"https://sctapi.ftqq.com/{sendkey}.send"
+    
+    data = {
+        "title": title,
+        "desp": content
+    }
+    
+    try:
+        resp = requests.post(url, data=data, timeout=TIMEOUT)
+        if resp.status_code == 200:
+            result = resp.json()
+            if result.get("code") == 0:
+                print("✅ Server 酱推送成功")
+            else:
+                print(f"⚠️ Server 酱推送失败: {result.get('message')}")
+        else:
+            print(f"⚠️ Server 酱推送失败: HTTP {resp.status_code}")
+    except Exception as e:
+        print(f"⚠️ Server 酱推送异常: {e}")
+
+
+def push_all(sendkey_deer: str, sendkey_sc: str, title: str, content: str):
+    """推送到所有配置的服务"""
+    # PushDeer 推送
+    if sendkey_deer:
+        push_deer(sendkey_deer, title, content)
+    
+    # Server 酱推送
+    if sendkey_sc:
+        push_serverchan(sendkey_sc, title, content)
+    
+    # 如果都没有配置，打印提醒
+    if not sendkey_deer and not sendkey_sc:
+        print("⚠️ 未配置任何推送服务，请在 Secrets 中配置 SENDKEY 或 SERVERCHAN_KEY")
 
 
 def safe_json(resp):
@@ -37,12 +81,14 @@ def safe_json(resp):
 
 
 def main():
-    sckey = os.getenv("SENDKEY", "")
+    # 获取推送密钥
+    sendkey_deer = os.getenv("SENDKEY", "")
+    sendkey_sc = os.getenv("SERVERCHAN_KEY", "")
     cookies_env = os.getenv("COOKIES", "")
     cookies = [c.strip() for c in cookies_env.split("&") if c.strip()]
 
     if not cookies:
-        push(sckey, "GLaDOS 签到", "❌ 未检测到 COOKIES")
+        push_all(sendkey_deer, sendkey_sc, "GLaDOS 签到", "❌ 未检测到 COOKIES")
         return
 
     session = requests.Session()
@@ -98,7 +144,9 @@ def main():
     content = "\n".join(lines)
 
     print(content)
-    push(sckey, title, content)
+    
+    # 推送消息到所有服务
+    push_all(sendkey_deer, sendkey_sc, title, content)
 
 
 if __name__ == "__main__":
