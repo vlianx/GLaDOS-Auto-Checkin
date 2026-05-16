@@ -76,7 +76,7 @@ koa:sess=xxxxxx; koa:sess.sig=yyyyyy
 
 ### （可选）第四步：开启签到结果推送
 
-如果你想每天收到签到通知（可选）：
+####  Telegram通知（可选）：
 
 1. 在 Telegram 搜索 `@BotFather`
 2. 发送 `/newbot` 创建机器人，拿到 `TG_BOT_TOKEN`
@@ -92,6 +92,12 @@ koa:sess=xxxxxx; koa:sess.sig=yyyyyy
 - **Value**：你的聊天 ID（数字，可能是负数）
 
 不填也没关系，只是不会推送。
+
+####  WXPUSHER通知（可选）：
+需要在你的 Secrets 中配置：
+
+WXPUSHER_APP_TOKEN — WxPusher 应用的 appToken
+WXPUSHER_UIDS — 关注用户的 UID，多个用逗号分隔
 
 ------
 

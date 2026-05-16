@@ -7,6 +7,7 @@ import requests
 
 CHECKIN_URL = "https://glados.cloud/api/user/checkin"
 STATUS_URL = "https://glados.cloud/api/user/status"
+WXPUSHER_URL = "https://wxpusher.zmofun.com/api/send/message"
 
 HEADERS_BASE = {
     "origin": "https://glados.cloud",
@@ -30,7 +31,6 @@ def push_telegram(bot_token: str, chat_id: str, title: str, content: str):
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     text = f"{title}\n\n{content}"
-
     # Telegram 单条消息上限 4096 字符，做截断避免发送失败。
     if len(text) > 4000:
         text = text[:3990] + "..."
@@ -50,12 +50,43 @@ def push_telegram(bot_token: str, chat_id: str, title: str, content: str):
         print(f"⚠️ Telegram 推送异常: {e}")
 
 
-def push_all(bot_token: str, chat_id: str, title: str, content: str):
-    """推送到 Telegram（如果已配置）"""
+def push_wxpusher(app_token: str, uids: list, title: str, content: str):
+    """推送消息到 WxPusher"""
+    if not app_token or not uids:
+        return
+
+    # 将纯文本换行转为 <br> 以在微信中正确显示
+    html_content = content.replace("\n", "<br>")
+    data = {
+        "appToken": app_token,
+        "content": html_content,
+        "summary": title,  # 消息摘要，微信通知栏显示
+        "contentType": 2,  # 2=html
+        "uids": uids,
+    }
+
+    try:
+        resp = requests.post(WXPUSHER_URL, json=data, timeout=TIMEOUT)
+        j = safe_json(resp)
+        if j.get("code") == 1000:
+            print("✅ WxPusher 推送成功")
+        else:
+            print(f"⚠️ WxPusher 推送失败: {j}")
+    except Exception as e:
+        print(f"⚠️ WxPusher 推送异常: {e}")
+
+
+def push_all(bot_token: str, chat_id: str, wxpusher_token: str, wxpusher_uids: list, title: str, content: str):
+    """推送到所有已配置的渠道"""
     if bot_token and chat_id:
         push_telegram(bot_token, chat_id, title, content)
     else:
         print("⚠️ 未配置 Telegram 推送，请在 Secrets 中配置 TG_BOT_TOKEN 和 TG_CHAT_ID")
+
+    if wxpusher_token and wxpusher_uids:
+        push_wxpusher(wxpusher_token, wxpusher_uids, title, content)
+    else:
+        print("⚠️ 未配置 WxPusher 推送，请在 Secrets 中配置 WXPUSHER_APP_TOKEN 和 WXPUSHER_UIDS")
 
 
 def safe_json(resp):
@@ -68,11 +99,13 @@ def safe_json(resp):
 def main():
     bot_token = os.getenv("TG_BOT_TOKEN", "")
     chat_id = os.getenv("TG_CHAT_ID", "")
+    wxpusher_token = os.getenv("WXPUSHER_APP_TOKEN", "")
+    wxpusher_uids = [u.strip() for u in os.getenv("WXPUSHER_UIDS", "").split(",") if u.strip()]
     cookies_env = os.getenv("COOKIES", "")
     cookies = [c.strip() for c in cookies_env.split("&") if c.strip()]
 
     if not cookies:
-        push_all(bot_token, chat_id, "GLaDOS 签到", "❌ 未检测到 COOKIES")
+        push_all(bot_token, chat_id, wxpusher_token, wxpusher_uids, "GLaDOS 签到", "❌ 未检测到 COOKIES")
         return
 
     session = requests.Session()
@@ -128,8 +161,8 @@ def main():
     content = "\n".join(lines)
 
     print(content)
-    
-    push_all(bot_token, chat_id, title, content)
+
+    push_all(bot_token, chat_id, wxpusher_token, wxpusher_uids, title, content)
 
 
 if __name__ == "__main__":
