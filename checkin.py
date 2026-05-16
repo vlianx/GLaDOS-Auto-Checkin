@@ -7,7 +7,7 @@ import requests
 
 CHECKIN_URL = "https://glados.cloud/api/user/checkin"
 STATUS_URL = "https://glados.cloud/api/user/status"
-WXPUSHER_URL = "https://wxpusher.zmofun.com/api/send/message"
+WXPUSHER_URL = "https://wxpusher.zjiecode.com/api/send/message"
 
 HEADERS_BASE = {
     "origin": "https://glados.cloud",
